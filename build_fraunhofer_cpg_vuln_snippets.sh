@@ -4,7 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_DIR="$ROOT"
 ENV_FILE="${ENV_FILE:-$ROOT/config/.env}"
-DEFAULT_DATASET="/Users/nident/Desktop/JOB/ScolTech/tasks 2.jsonl"
+DEFAULT_DATASET_EXTERNAL="/Users/nident/Desktop/JOB/ScolTech/tasks 2.jsonl"
+DEFAULT_DATASET_LOCAL="$ROOT/datasets/tasks 2.jsonl"
+DEFAULT_DATASET="$DEFAULT_DATASET_EXTERNAL"
+if [[ ! -f "$DEFAULT_DATASET" && -f "$DEFAULT_DATASET_LOCAL" ]]; then
+  DEFAULT_DATASET="$DEFAULT_DATASET_LOCAL"
+fi
 
 [[ $# -le 1 ]] || { echo "Usage: $0 [DATASET.jsonl]" >&2; exit 2; }
 DATASET="${1:-${SNIPPET_DATASET:-$DEFAULT_DATASET}}"

@@ -4,9 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_DIR="$ROOT"
 ENV_FILE="${ENV_FILE:-$ROOT/config/.env}"
-[[ $# -eq 1 ]] || { echo "Usage: $0 DATASET.json" >&2; exit 2; }
-[[ -f "$1" ]] || { echo "Dataset does not exist: $1" >&2; exit 2; }
-DATASET="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+DEFAULT_DATASET="$ROOT/datasets/tasks 2.jsonl"
+
+[[ $# -le 1 ]] || { echo "Usage: $0 [DATASET.jsonl]" >&2; exit 2; }
+DATASET="${1:-$DEFAULT_DATASET}"
+[[ -f "$DATASET" ]] || { echo "Dataset does not exist: $DATASET" >&2; exit 2; }
+DATASET="$(cd "$(dirname "$DATASET")" && pwd)/$(basename "$DATASET")"
 [[ -f "$ENV_FILE" ]] || { echo "Missing env file: $ENV_FILE" >&2; exit 2; }
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
@@ -21,24 +24,44 @@ done
 [[ "$SKIP_EXISTING" =~ ^(0|1)$ ]] || { echo "SKIP_EXISTING must be 0 or 1" >&2; exit 2; }
 [[ "$MAX_COMPLEXITY_CF_DFG" =~ ^[1-9][0-9]*$ ]] || { echo "MAX_COMPLEXITY_CF_DFG must be a positive integer" >&2; exit 2; }
 [[ "$MAX_CPG_SECONDS" =~ ^[1-9][0-9]*$ ]] || { echo "MAX_CPG_SECONDS must be a positive integer" >&2; exit 2; }
-for command in docker python3; do command -v "$command" >/dev/null || { echo "Missing command: $command" >&2; exit 2; }; done
+
+TASKS_TARGET="${TASKS_TARGET:-vuln}"
+TASKS_COMMIT_FIELD="${TASKS_COMMIT_FIELD:-vuln_commit}"
+TASKS_LIMIT="${TASKS_LIMIT:-0}"
+TASKS_SELECTED_ONLY="${TASKS_SELECTED_ONLY:-0}"
+TASKS_LANGUAGE_DEFAULT="${TASKS_LANGUAGE_DEFAULT:-java}"
+DRY_RUN="${DRY_RUN:-0}"
+[[ "$TASKS_TARGET" =~ ^(vuln|task|both)$ ]] || { echo "TASKS_TARGET must be vuln, task, or both" >&2; exit 2; }
+[[ "$TASKS_COMMIT_FIELD" =~ ^(vuln_commit|safe_commit|last_commit)$ ]] || { echo "TASKS_COMMIT_FIELD must be vuln_commit, safe_commit, or last_commit" >&2; exit 2; }
+[[ "$TASKS_LIMIT" =~ ^[0-9]+$ ]] || { echo "TASKS_LIMIT must be a non-negative integer" >&2; exit 2; }
+[[ "$TASKS_SELECTED_ONLY" =~ ^(0|1)$ ]] || { echo "TASKS_SELECTED_ONLY must be 0 or 1" >&2; exit 2; }
+[[ "$TASKS_LANGUAGE_DEFAULT" =~ ^[A-Za-z0-9_.+-]+$ ]] || { echo "TASKS_LANGUAGE_DEFAULT contains invalid characters" >&2; exit 2; }
+[[ "$DRY_RUN" =~ ^(0|1)$ ]] || { echo "DRY_RUN must be 0 or 1" >&2; exit 2; }
+
+command -v python3 >/dev/null || { echo "Missing command: python3" >&2; exit 2; }
+if [[ "$DRY_RUN" == 0 ]]; then
+  command -v docker >/dev/null || { echo "Missing command: docker" >&2; exit 2; }
+fi
 python3 - "$STATS_INTERVAL_SECONDS" <<'PY' || { echo "STATS_INTERVAL_SECONDS must be a positive number" >&2; exit 2; }
 import sys
 assert float(sys.argv[1]) > 0
 PY
-docker info >/dev/null 2>&1 || { echo "Docker daemon is not running" >&2; exit 2; }
-docker image inspect "$DOCKER_IMAGE" >/dev/null 2>&1 || { echo "Missing image $DOCKER_IMAGE; run ./init.sh" >&2; exit 2; }
 CPG_BIN="$CPG_REPO_DIR/cpg-neo4j/build/install/cpg-neo4j/bin/cpg-neo4j"
-[[ -x "$CPG_BIN" ]] || { echo "Missing $CPG_BIN; run ./init.sh" >&2; exit 2; }
+if [[ "$DRY_RUN" == 0 ]]; then
+  docker info >/dev/null 2>&1 || { echo "Docker daemon is not running" >&2; exit 2; }
+  docker image inspect "$DOCKER_IMAGE" >/dev/null 2>&1 || { echo "Missing image $DOCKER_IMAGE; run ./init.sh" >&2; exit 2; }
+  [[ -x "$CPG_BIN" ]] || { echo "Missing $CPG_BIN; run ./init.sh" >&2; exit 2; }
+fi
 
-dataset_name="$(basename "$DATASET")"; dataset_name="${dataset_name%.*}"
-RUN_ID="${RUN_ID:-$dataset_name}"
+dataset_name="$(basename "$DATASET")"; dataset_name="${dataset_name%.*}"; dataset_name="${dataset_name// /_}"
+RUN_ID="${RUN_ID:-${dataset_name}_${TASKS_TARGET}_${TASKS_COMMIT_FIELD}_full_project}"
 [[ "$RUN_ID" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "RUN_ID contains invalid characters: $RUN_ID" >&2; exit 2; }
 RUN_REPOS_DIR="$REPOS_DIR/$RUN_ID"
 RUN_OUT_DIR="$OUT_DIR/$RUN_ID"
 RUN_LOG_DIR="$LOG_DIR/$RUN_ID"
 METRICS_CSV="$RUN_LOG_DIR/commit_metrics.csv"
 DOCKER_SAMPLES_CSV="$RUN_LOG_DIR/docker_samples.csv"
+MANIFEST_JSONL="$RUN_LOG_DIR/record_manifest.jsonl"
 mkdir -p "$RUN_REPOS_DIR" "$RUN_OUT_DIR" "$RUN_LOG_DIR"
 
 records_tsv="$(mktemp)"; active_container=""; docker_summary=""
@@ -50,45 +73,132 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
-python3 - "$DATASET" > "$records_tsv" <<'PY'
-import json, pathlib, re, sys
+python3 - "$DATASET" "$TASKS_TARGET" "$TASKS_COMMIT_FIELD" "$TASKS_LIMIT" "$TASKS_SELECTED_ONLY" "$TASKS_LANGUAGE_DEFAULT" "$MANIFEST_JSONL" > "$records_tsv" <<'PY'
+import json
+import pathlib
+import re
+import sys
 
-path = pathlib.Path(sys.argv[1])
-text = path.read_text(encoding="utf-8")
-try:
-    objects = [json.loads(text)]
-except json.JSONDecodeError:
-    objects = [json.loads(line) for line in text.splitlines() if line.strip()]
+dataset = pathlib.Path(sys.argv[1])
+target = sys.argv[2]
+commit_field = sys.argv[3]
+limit = int(sys.argv[4])
+selected_only = sys.argv[5] == "1"
+language_default = sys.argv[6]
+manifest = pathlib.Path(sys.argv[7])
 
-count = 0
-for obj in objects:
-    for record in obj.get("records", [obj]):
-        language = record.get("dataset_record", {}).get("language", "")
-        for item in record.get("results", []):
-            project, commit = item.get("project"), item.get("commit")
-            if not isinstance(project, str) or not re.fullmatch(r"[^/\s]+/[^/\s]+", project):
-                raise TypeError(f"invalid project: {project!r}")
-            if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-fA-F]{7,64}", commit):
-                raise TypeError(f"invalid commit for {project}: {commit!r}")
-            if not isinstance(language, str) or "\t" in language:
-                raise TypeError(f"invalid language for {project}: {language!r}")
-            print(project, commit, language, sep="\t")
-            count += 1
-if count == 0:
-    raise ValueError("dataset contains no results")
+project_re = re.compile(r"[^/\s]+/[^/\s]+")
+commit_re = re.compile(r"[0-9a-fA-F]{7,64}")
+
+def clean(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("_")
+
+def infer_language(obj: dict, fallback: str) -> str:
+    language = obj.get("language")
+    if isinstance(language, str) and language:
+        return language
+    for snippet in obj.get("snippets", []) if isinstance(obj.get("snippets"), list) else []:
+        code = snippet.get("vuln_snippet") if isinstance(snippet, dict) else None
+        if not isinstance(code, str):
+            continue
+        if re.search(r"\b(class|interface|enum)\s+[A-Za-z_$][\w$]*\b|\b(public|private|protected)\b", code):
+            return "java"
+        if re.search(r"^(def|class|import|from)\s+", code, re.MULTILINE):
+            return "python"
+    return fallback
+
+def candidates(row: dict):
+    if target in {"vuln", "both"}:
+        yield "vuln", row.get("vuln")
+    if target in {"task", "both"}:
+        yield "task", row.get("task")
+
+records = {}
+order = []
+for row_number, line in enumerate(dataset.open(encoding="utf-8"), start=1):
+    if not line.strip():
+        continue
+    row = json.loads(line)
+    if selected_only and row.get("selected") is not True:
+        continue
+    for kind, obj in candidates(row):
+        if not isinstance(obj, dict):
+            raise TypeError(f"line {row_number}: missing object field {kind}")
+        project = obj.get("project")
+        commit = obj.get(commit_field)
+        if not isinstance(project, str) or not project_re.fullmatch(project):
+            raise TypeError(f"line {row_number}: invalid {kind}.project: {project!r}")
+        if not isinstance(commit, str) or not commit_re.fullmatch(commit):
+            raise TypeError(f"line {row_number}: invalid {kind}.{commit_field}: {commit!r}")
+        language = infer_language(obj, language_default)
+        if "\t" in language:
+            raise TypeError(f"line {row_number}: invalid language: {language!r}")
+
+        key = (kind, project, commit)
+        if key not in records:
+            if limit and len(order) >= limit:
+                continue
+            safe_project = clean(project.replace("/", "__"))
+            record_id = f"{kind}__{safe_project}__{commit[:12]}"
+            records[key] = {
+                "record_id": record_id,
+                "source": kind,
+                "project": project,
+                "commit": commit,
+                "commit_field": commit_field,
+                "language": language,
+                "row_numbers": [],
+                "selected_rows": 0,
+            }
+            order.append(key)
+        records[key]["row_numbers"].append(row_number)
+        if row.get("selected") is True:
+            records[key]["selected_rows"] += 1
+
+if not order:
+    raise ValueError("dataset produced no build records")
+
+manifest.parent.mkdir(parents=True, exist_ok=True)
+with manifest.open("w", encoding="utf-8") as manifest_file:
+    for key in order:
+        record = records[key]
+        manifest_file.write(json.dumps(record, ensure_ascii=False) + "\n")
+        print(
+            record["record_id"],
+            record["project"],
+            record["commit"],
+            record["language"],
+            record["source"],
+            ",".join(map(str, record["row_numbers"])),
+            sep="\t",
+        )
 PY
 
-echo "Run=$RUN_ID dataset=$DATASET"
-while IFS=$'\t' read -r project commit language; do
-  safe_project="${project//\//__}"; short_commit="${commit:0:12}"
-  repo_dir="$RUN_REPOS_DIR/${safe_project}__${short_commit}"
-  out_file="$RUN_OUT_DIR/${safe_project}__${short_commit}.json"
-  log_file="$RUN_LOG_DIR/${safe_project}__${short_commit}.log"
-  active_container="cpg-${safe_project//__/-}-${short_commit}-$$"
+if [[ "$DRY_RUN" == 0 ]] && awk -F'\t' '$4 == "java" { found=1 } END { exit found ? 0 : 1 }' "$records_tsv"; then
+  if ! grep -Eq '^enableJavaFrontend *= *true\b' "$CPG_REPO_DIR/gradle.properties" 2>/dev/null; then
+    echo "Dataset contains Java projects, but Fraunhofer CPG was built without Java frontend." >&2
+    echo "Set ENABLE_JAVA_FRONTEND=true in config/.env and run ./init.sh once." >&2
+    exit 2
+  fi
+fi
+
+echo "Run=$RUN_ID dataset=$DATASET records=$(wc -l < "$records_tsv" | tr -d ' ') timeout=${MAX_CPG_SECONDS}s target=$TASKS_TARGET commit_field=$TASKS_COMMIT_FIELD"
+if [[ "$DRY_RUN" == 1 ]]; then
+  echo "Dry run: records were parsed, no repositories cloned, no CPG built."
+  echo "Manifest: $MANIFEST_JSONL"
+  exit 0
+fi
+while IFS=$'\t' read -r record_id project commit language source_kind row_numbers; do
+  short_commit="${commit:0:12}"
+  repo_dir="$RUN_REPOS_DIR/$record_id"
+  out_file="$RUN_OUT_DIR/$record_id.json"
+  log_file="$RUN_LOG_DIR/$record_id.log"
+  active_container="cpg-${record_id:0:48}-$$"
 
   if [[ "$SKIP_EXISTING" == 1 && -s "$out_file" ]]; then
-    echo "Skip $project@$short_commit"
-    active_container=""; continue
+    echo "Skip $record_id"
+    active_container=""
+    continue
   fi
 
   started="$(python3 -c 'import time; print(time.time())')"; started_utc="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -120,13 +230,13 @@ while IFS=$'\t' read -r project commit language; do
     ' > "$log_file" 2>&1 &
   analysis_pid=$!
   python3 "$ROOT/scripts/monitor_docker_stats.py" --container "$active_container" \
-    --project "$project" --commit "$commit" --samples-csv "$DOCKER_SAMPLES_CSV" \
+    --project "$project" --commit "$commit#$source_kind#$row_numbers" --samples-csv "$DOCKER_SAMPLES_CSV" \
     --summary-json "$docker_summary" --interval "$STATS_INTERVAL_SECONDS" &
   monitor_pid=$!
 
   exit_code=0; wait "$analysis_pid" || exit_code=$?
-  case "$exit_code" in 0) status=success;; 124) status=timed_out;; *) status=failed;; esac
-  wait "$monitor_pid" || echo "Statistics monitor failed: $project@$short_commit" >&2
+  case "$exit_code" in 0) status=success;; 124|137) status=timed_out;; *) status=failed;; esac
+  wait "$monitor_pid" || echo "Statistics monitor failed: $record_id" >&2
   active_container=""
   finished="$(python3 -c 'import time; print(time.time())')"; finished_utc="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
   read -r total clone cpg < <(python3 - "$started" "$cloned" "$finished" <<'PY'
@@ -135,7 +245,7 @@ a, b, c = map(float, sys.argv[1:]); print(c-a, b-a, c-b)
 PY
   )
   python3 "$ROOT/scripts/record_commit_metrics.py" --csv "$METRICS_CSV" --summary-json "$docker_summary" \
-    --project "$project" --commit "$commit" --language "$language" --status "$status" \
+    --project "$project" --commit "$commit#$source_kind#$record_id" --language "$language" --status "$status" \
     --started-at-utc "$started_utc" --finished-at-utc "$finished_utc" \
     --total-seconds "$total" --clone-seconds "$clone" --cpg-seconds "$cpg" \
     --repo "$repo_dir" --cpg-repo "$CPG_REPO_DIR" --output "$out_file" \
@@ -144,11 +254,13 @@ PY
 
   if [[ "$status" != success ]]; then
     [[ ! -e "$out_file" ]] || mv "$out_file" "$out_file.partial-$(date -u +'%Y%m%dT%H%M%SZ')"
-    echo "$status $project@$short_commit (exit=$exit_code)" >&2
+    echo "$status $record_id $project@$short_commit (exit=$exit_code)" >&2
   else
     echo "Saved $out_file"
   fi
 done < "$records_tsv"
 
 echo "Done: $RUN_OUT_DIR"
+echo "Logs: $RUN_LOG_DIR"
 echo "Metrics: $METRICS_CSV"
+echo "Manifest: $MANIFEST_JSONL"
