@@ -1,8 +1,14 @@
+# macOS
 .DS_Store
-__pycache__/
-*.pyc
 
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Generated runtime/output data
 cpg-examples/
 logs/
 work/
 cpg-output/
+*.dataset/
+*.precheck.tmp.json
