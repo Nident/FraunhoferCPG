@@ -1,0 +1,315 @@
+{
+  "records": [
+    {
+      "project": "pretalx/pretalx",
+      "source_line": 10,
+      "source_row": 10,
+      "results": [
+        {
+          "project": "pretalx/pretalx",
+          "commit": "4732e8f5592eeeb3c75233a783985158e3dd12bb",
+          "state": "vulnerable"
+        },
+        {
+          "project": "pretalx/pretalx",
+          "commit": "60722c43cf975f319e94102e6bff320723776890",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2023-28458",
+          "CVE-2023-28459"
+        ],
+        "cwe_ids": [
+          "CWE-22"
+        ]
+      }
+    },
+    {
+      "project": "WordOps/WordOps",
+      "source_line": 11,
+      "source_row": 11,
+      "results": [
+        {
+          "project": "WordOps/WordOps",
+          "commit": "29f8edea9afc91fbeaeb9761f5d410be82f1a1e6",
+          "state": "vulnerable"
+        },
+        {
+          "project": "WordOps/WordOps",
+          "commit": "31353f0fef14ad8bc1f61c028971bd30b9e1909b",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2024-34528"
+        ],
+        "cwe_ids": [
+          "CWE-367"
+        ]
+      }
+    },
+    {
+      "project": "matrix-org/synapse",
+      "source_line": 12,
+      "source_row": 12,
+      "results": [
+        {
+          "project": "matrix-org/synapse",
+          "commit": "93b61589b0bdb3845ee839e9c2a4e1adb06bd483",
+          "state": "vulnerable"
+        },
+        {
+          "project": "matrix-org/synapse",
+          "commit": "e54746bdf7d5c831eabe4dcea76a7626f1de73df",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2021-21332",
+          "CVE-2021-21333"
+        ],
+        "cwe_ids": [
+          "CWE-79",
+          "CWE-74"
+        ]
+      }
+    },
+    {
+      "project": "wagtail/wagtail",
+      "source_line": 13,
+      "source_row": 13,
+      "results": [
+        {
+          "project": "wagtail/wagtail",
+          "commit": "b59a7379300fe74bbd5b536bdfeeb503d6857f8e",
+          "state": "vulnerable"
+        },
+        {
+          "project": "wagtail/wagtail",
+          "commit": "d9a41e7f24d08c024acc9a3094940199df94db34",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2020-15118"
+        ],
+        "cwe_ids": [
+          "CWE-79"
+        ]
+      }
+    },
+    {
+      "project": "psd-tools/psd-tools",
+      "source_line": 14,
+      "source_row": 14,
+      "results": [
+        {
+          "project": "psd-tools/psd-tools",
+          "commit": "f925204fb161f9537cde343f99716b433af2dc46",
+          "state": "vulnerable"
+        },
+        {
+          "project": "psd-tools/psd-tools",
+          "commit": "6c0a78f195b5942757886a1863793fd5946c1fb1",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2026-27809"
+        ],
+        "cwe_ids": [
+          "CWE-190",
+          "CWE-409",
+          "CWE-617",
+          "CWE-704",
+          "CWE-755",
+          "CWE-789"
+        ]
+      }
+    },
+    {
+      "project": "dgtlmoon/changedetection.io",
+      "source_line": 15,
+      "source_row": 15,
+      "results": [
+        {
+          "project": "dgtlmoon/changedetection.io",
+          "commit": "524393a1fbdd43dd02fe725eb4483c3e427f3705",
+          "state": "vulnerable"
+        },
+        {
+          "project": "dgtlmoon/changedetection.io",
+          "commit": "1d7d812eb0faab37042246e2fbce04f29bb1b3aa",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2026-29065"
+        ],
+        "cwe_ids": [
+          "CWE-22"
+        ]
+      }
+    },
+    {
+      "project": "janeczku/calibre-web",
+      "source_line": 16,
+      "source_row": 16,
+      "results": [
+        {
+          "project": "janeczku/calibre-web",
+          "commit": "8007e450b3178f517b83b0989744c6df38867932",
+          "state": "vulnerable"
+        },
+        {
+          "project": "janeczku/calibre-web",
+          "commit": "965352c8d96c9eae7a6867ff76b0db137d04b0b8",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2022-0766",
+          "CVE-2022-0767"
+        ],
+        "cwe_ids": [
+          "CWE-918"
+        ]
+      }
+    },
+    {
+      "project": "django/django",
+      "source_line": 17,
+      "source_row": 17,
+      "results": [
+        {
+          "project": "django/django",
+          "commit": "3e0857041b6bfc9deef392315c978abede706c92",
+          "state": "vulnerable"
+        },
+        {
+          "project": "django/django",
+          "commit": "9305c0e12d43c4df999c3301a1f0c742264a657e",
+          "state": "fixed"
+        },
+        {
+          "project": "django/django",
+          "commit": "92d3430f12171f16f566c9050c40feefb830a4a3",
+          "state": "fixed"
+        },
+        {
+          "project": "django/django",
+          "commit": "b45c377f8f488955e0c7069cad3f3dd21910b071",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2012-4520"
+        ],
+        "cwe_ids": [
+          "CWE-20"
+        ]
+      }
+    },
+    {
+      "project": "apache/airflow",
+      "source_line": 18,
+      "source_row": 18,
+      "results": [
+        {
+          "project": "apache/airflow",
+          "commit": "7af60d1a1010e929075584f8d175e6c27da8bd2d",
+          "state": "vulnerable"
+        },
+        {
+          "project": "apache/airflow",
+          "commit": "101d59c4b88ab979d305b8d96f612c27c8a44aa8",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2023-39508"
+        ],
+        "cwe_ids": [
+          "CWE-200",
+          "CWE-250"
+        ]
+      }
+    },
+    {
+      "project": "matrix-org/synapse",
+      "source_line": 19,
+      "source_row": 19,
+      "results": [
+        {
+          "project": "matrix-org/synapse",
+          "commit": "07771fa487e1d281fdcae35a47db87ab675cb6b3",
+          "state": "vulnerable"
+        },
+        {
+          "project": "matrix-org/synapse",
+          "commit": "89a23c940672944acd98db58085cdc38191515a8",
+          "state": "fixed"
+        },
+        {
+          "project": "matrix-org/synapse",
+          "commit": "7c9b91790c013d11ca88a9d01e0054939eda8523",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2023-32682"
+        ],
+        "cwe_ids": [
+          "CWE-287"
+        ]
+      }
+    },
+    {
+      "project": "apache/airflow",
+      "source_line": 20,
+      "source_row": 20,
+      "results": [
+        {
+          "project": "apache/airflow",
+          "commit": "1fa80d38a45ae01c53715aa13c560f6155ecc60a",
+          "state": "vulnerable"
+        },
+        {
+          "project": "apache/airflow",
+          "commit": "828aaa0b1d95caf90612a648867c17aec7e87874",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2025-62402"
+        ],
+        "cwe_ids": [
+          "CWE-250"
+        ]
+      }
+    }
+  ]
+}

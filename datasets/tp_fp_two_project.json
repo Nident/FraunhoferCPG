@@ -1,0 +1,117 @@
+{
+  "criteria": "Two selected projects with one tp and one fp verdict in results.csv; records matched in vuln_patches.jsonl by project and states[].commit.",
+  "selected_projects": [
+    "openstack/kolla"
+  ],
+  "records": [
+    {
+      "project": "openstack/kolla",
+      "source_file": "/Users/nident/Desktop/JOB/ScolTech/vul-awesome-skills/data/vuln_patches.jsonl",
+      "source_line": 1209,
+      "results": [
+        {
+          "project": "openstack/kolla",
+          "commit": "2c2dc39b3bb39a27e6f94dbd797c9406bf512109",
+          "verdict": "tp"
+        },
+        {
+          "project": "openstack/kolla",
+          "commit": "2a4a8fce31c12114e8f472c24dd96864b5bd2bd2",
+          "verdict": "fp"
+        }
+      ],
+      "dataset_record": {
+        "project": "openstack/kolla",
+        "language": "python",
+        "published": "2022-12-21",
+        "cve_ids": [
+          "CVE-2022-38060"
+        ],
+        "cwe_ids": [
+          "CWE-269",
+          "CWE-426"
+        ],
+        "states": [
+          {
+            "commit": "2c2dc39b3bb39a27e6f94dbd797c9406bf512109"
+          },
+          {
+            "commit": "2a4a8fce31c12114e8f472c24dd96864b5bd2bd2",
+            "message": "Merge \"Fix CVE-2022-38060\"",
+            "diff": {
+              "summary": "5 files changed, 24 insertions(+), 53 deletions(-)",
+              "files": [
+                {
+                  "filename": "doc/source/admin/kolla_api.rst",
+                  "patch": "@@ -93,27 +93,17 @@ Here is an example configuration file:\n Passing the configuration file to the container\n ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n \n-The configuration can be either passed via the ``KOLLA_CONFIG`` environment\n-variable or as a file bind-mounted into the container. When bind-mounting the\n-configuration file, the ``KOLLA_CONFIG_FILE`` environment variable controls\n-where the file is located in the container, the default path being\n+The configuration to the container can be passed through a dedicated path:\n ``/var/lib/kolla/config_files/config.json``.\n-\n-Passing the configuration file as environment variable:\n-\n-.. code-block:: console\n-\n-   docker run -e KOLLA_CONFIG_STRATEGY=COPY_ALWAYS \\\n-       -e KOLLA_CONFIG='{ \"command\": \"...\", \"permissions\": [ { \"path\": \"...\", } ] }' \\\n-       kolla-image\n+It is advised to ensure this path is mounted read-only for security reasons.\n \n Mounting the configuration file in the container:\n \n .. code-block:: console\n \n    docker run -e KOLLA_CONFIG_STRATEGY=COPY_ALWAYS \\\n-       -e KOLLA_CONFIG_FILE=/config.json \\\n-       -v /path/to/config.json:/config.json kolla-image\n+       -v /path/to/config.json:/var/lib/kolla/config_files/config.json:ro \\\n+       kolla-image\n \n .. _kolla_api_environment_variables:\n \n@@ -126,10 +116,6 @@ Variables to pass to the containers\n The Kolla containers also understand some environment variables to change their\n behavior at runtime:\n \n-* **KOLLA_CONFIG**: load kolla config from the environment, takes precedence\n-  over ``KOLLA_CONFIG_FILE``.\n-* **KOLLA_CONFIG_FILE**: path to kolla json config file, defaults to\n-  ``/var/lib/kolla/config_files/config.json``.\n * **KOLLA_CONFIG_STRATEGY** (required): Defines how the :ref:`kolla_start\n   script <kolla_api_external_config>` copies the configuration file. Must be\n   one of:"
+                },
+                {
+                  "filename": "docker/base/set_configs.py",
+                  "patch": "@@ -272,21 +272,8 @@ def validate_source(data):\n \n \n def load_config():\n-    def load_from_env():\n-        config_raw = os.environ.get(\"KOLLA_CONFIG\")\n-        if config_raw is None:\n-            return None\n-\n-        # Attempt to read config\n-        try:\n-            return json.loads(config_raw)\n-        except ValueError:\n-            raise InvalidConfig('Invalid json for Kolla config')\n-\n     def load_from_file():\n-        config_file = os.environ.get(\"KOLLA_CONFIG_FILE\")\n-        if not config_file:\n-            config_file = '/var/lib/kolla/config_files/config.json'\n+        config_file = '/var/lib/kolla/config_files/config.json'\n         LOG.info(\"Loading config file at %s\", config_file)\n \n         # Attempt to read config file\n@@ -300,9 +287,7 @@ def load_from_file():\n                 raise InvalidConfig(\n                     \"Could not read file %s: %r\" % (config_file, e))\n \n-    config = load_from_env()\n-    if config is None:\n-        config = load_from_file()\n+    config = load_from_file()\n \n     LOG.info('Validating config file')\n     validate_config(config)"
+                },
+                {
+                  "filename": "docker/base/sudoers",
+                  "patch": "@@ -6,6 +6,8 @@\n # anyone in the kolla group may sudo -E (set the environment)\n Defaults: %kolla setenv\n \n+Defaults secure_path=\"/var/lib/kolla/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"\n+\n # root may run any commands via sudo as the network seervice user.  This is\n # neededfor database migrations of existing services which have not been\n # converted to run as a non-root user, but instead do that via sudo -E glance"
+                },
+                {
+                  "filename": "releasenotes/notes/bug-1985784-59df54a10a004551.yaml",
+                  "patch": "@@ -0,0 +1,16 @@\n+---\n+security:\n+  - |\n+    Fixes CVE-2022-38060, a sudo privilege escalation vulnerability.\n+    `LP#1985784 <https://launchpad.net/bugs/1889611>`__\n+upgrade:\n+  - |\n+    To fix CVE-2022-38060, support for KOLLA_CONFIG and KOLLA_CONFIG_FILE\n+    environment variables in kolla-built containers has been dropped.\n+    Now, only the single trusted path of\n+    ``/var/lib/kolla/config_files/config.json`` will be utilised for loading\n+    container config.\n+    We believe this is a reasonable tradeoff as these environment variables\n+    were not used by any known downstream and potential users in the wild\n+    can easily adapt as this does not limit the functionality per se, only\n+    making it stricter as to where the config can come from."
+                },
+                {
+                  "filename": "tests/test_set_config.py",
+                  "patch": "@@ -59,24 +59,6 @@ def test_load_ok(self):\n                 mock.call().__exit__(None, None, None)], mo.mock_calls)\n \n \n-class LoadFromEnv(base.BaseTestCase):\n-\n-    def test_load_ok(self):\n-        in_config = json.dumps({'command': '/bin/true',\n-                                'config_files': {}})\n-\n-        mo = mock.mock_open()\n-        with mock.patch.object(set_configs, 'open', mo):\n-            with mock.patch.dict('os.environ', {'KOLLA_CONFIG': in_config}):\n-                config = set_configs.load_config()\n-                set_configs.copy_config(config)\n-                self.assertEqual([mock.call('/run_command', 'w+'),\n-                                  mock.call().__enter__(),\n-                                  mock.call().write('/bin/true'),\n-                                  mock.call().__exit__(None, None, None)],\n-                                 mo.mock_calls)\n-\n-\n FAKE_CONFIG_FILES = [\n     set_configs.ConfigFile(\n         '/var/lib/kolla/config_files/bar.conf',"
+                }
+              ]
+            }
+          }
+        ],
+        "advisory": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2022-38060",
+          "https://bugs.launchpad.net/kolla/+bug/1985784",
+          "https://bugzilla.redhat.com/show_bug.cgi?id=2124758",
+          "https://github.com/openstack/kolla",
+          "https://talosintelligence.com/vulnerability_reports/TALOS-2022-1589"
+        ],
+        "description_cve": {
+          "CVE-2022-38060": "A privilege escalation vulnerability exists in the sudo functionality of OpenStack Kolla git master 05194e7618. A misconfiguration in /etc/sudoers within a container can lead to increased privileges."
+        },
+        "description_cwe": {
+          "CWE-269": {
+            "name": "Improper Privilege Management",
+            "description": "The product does not properly assign, modify, track, or check privileges for an actor, creating an unintended sphere of control for that actor.",
+            "extended_description": ""
+          },
+          "CWE-426": {
+            "name": "Untrusted Search Path",
+            "description": "The product searches for critical resources using an externally-supplied search path that can point to resources that are not under the product's direct control.",
+            "extended_description": "This might allow attackers to execute their own programs, access unauthorized data files, or modify configuration in unexpected ways. If the product uses a search path to locate critical resources such as programs, then an attacker could modify that search path to point to a malicious program, which the targeted product would then execute. The problem extends to any type of critical resource that the product trusts. Some of the most common variants of untrusted search path are: In various UNIX and Linux-based systems, the PATH environment variable may be consulted to locate executable programs, and LD_PRELOAD may be used to locate a separate library. In various Microsoft-based systems, the PATH environment variable is consulted to locate a DLL, if the DLL is not found in other paths that appear earlier in the search order."
+          }
+        },
+        "vuln": [
+          {
+            "name": "load_config",
+            "path": "docker/base/set_configs.py",
+            "lines": [
+              "    def load_from_env():\n        config_raw = os.environ.get(\"KOLLA_CONFIG\")\n        if config_raw is None:\n            return None\n\n        # Attempt to read config\n        try:\n            return json.loads(config_raw)\n        except ValueError:\n            raise InvalidConfig('Invalid json for Kolla config')",
+              "        config_file = os.environ.get(\"KOLLA_CONFIG_FILE\")\n        if not config_file:\n            config_file = '/var/lib/kolla/config_files/config.json'",
+              "    config = load_from_env()\n    if config is None:\n        config = load_from_file()"
+            ],
+            "description": "Allows configuration to be loaded from untrusted environment variables KOLLA_CONFIG and KOLLA_CONFIG_FILE, enabling privilege escalation through externally-controlled search paths and configuration injection."
+          }
+        ],
+        "safe": [
+          {
+            "name": "load_config",
+            "path": "docker/base/set_configs.py",
+            "lines": [
+              "        config_file = '/var/lib/kolla/config_files/config.json'",
+              "    config = load_from_file()"
+            ]
+          }
+        ],
+        "id": 1209,
+        "idx": 1208
+      }
+    }
+  ]
+}

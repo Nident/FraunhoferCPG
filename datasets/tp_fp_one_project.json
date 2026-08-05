@@ -1,0 +1,112 @@
+{
+  "criteria": "Two selected projects with one tp and one fp verdict in results.csv; records matched in vuln_patches.jsonl by project and states[].commit.",
+  "selected_projects": [
+    "open-webui/open-webui"
+  ],
+  "records": [
+    {
+      "project": "open-webui/open-webui",
+      "source_file": "/Users/nident/Desktop/JOB/ScolTech/vul-awesome-skills/data/vuln_patches.jsonl",
+      "source_line": 3995,
+      "results": [
+        {
+          "project": "open-webui/open-webui",
+          "commit": "9762ef3ef6f230bfed8d550dde69df6187f6267d",
+          "verdict": "tp"
+        },
+        {
+          "project": "open-webui/open-webui",
+          "commit": "8af6a4cf21b756a66cd58378a01c60f74c39b7ca",
+          "verdict": "fp"
+        }
+      ],
+      "dataset_record": {
+        "project": "open-webui/open-webui",
+        "language": "python",
+        "published": "2025-11-08",
+        "cve_ids": [
+          "CVE-2025-64496"
+        ],
+        "cwe_ids": [
+          "CWE-95",
+          "CWE-501",
+          "CWE-829",
+          "CWE-830"
+        ],
+        "advisory": [
+          "https://github.com/open-webui/open-webui/security/advisories/GHSA-cm35-v4vp-5xvx",
+          "https://github.com/open-webui/open-webui/commit/8af6a4cf21b756a66cd58378a01c60f74c39b7ca"
+        ],
+        "states": [
+          {
+            "commit": "9762ef3ef6f230bfed8d550dde69df6187f6267d"
+          },
+          {
+            "commit": "8af6a4cf21b756a66cd58378a01c60f74c39b7ca",
+            "message": "refac: direct connections",
+            "diff": {
+              "summary": "1 files changed, 3 insertions(+), 1 deletions(-)",
+              "files": [
+                {
+                  "filename": "backend/open_webui/utils/middleware.py",
+                  "patch": "@@ -2349,7 +2349,9 @@ async def flush_pending_delta_data(threshold: int = 0):\n                             )\n \n                             if data:\n-                                if \"event\" in data:\n+                                if \"event\" in data and not getattr(\n+                                    request.state, \"direct\", False\n+                                ):\n                                     await event_emitter(data.get(\"event\", {}))\n \n                                 if \"selected_model_id\" in data:"
+                }
+              ]
+            }
+          }
+        ],
+        "description_cve": {
+          "CVE-2025-64496": "Open WebUI is a self-hosted artificial intelligence platform designed to operate entirely offline. Versions 0.6.224 and prior contain a code injection vulnerability in the Direct Connections feature that allows malicious external model servers to execute arbitrary JavaScript in victim browsers via Server-Sent Event (SSE) execute events. This leads to authentication token theft, complete account takeover, and when chained with the Functions API, enables remote code execution on the backend server. The attack requires the victim to enable Direct Connections (disabled by default) and add the attacker's malicious model URL, achievable through social engineering of the admin and subsequent users. This issue is fixed in version 0.6.35."
+        },
+        "description_cwe": {
+          "CWE-95": {
+            "name": "Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')",
+            "description": "The product receives input from an upstream component, but it does not neutralize or incorrectly neutralizes code syntax before using the input in a dynamic evaluation call (e.g. \"eval\").",
+            "extended_description": ""
+          },
+          "CWE-501": {
+            "name": "Trust Boundary Violation",
+            "description": "The product mixes trusted and untrusted data in the same data structure or structured message.",
+            "extended_description": "A trust boundary can be thought of as line drawn through a program. On one side of the line, data is untrusted. On the other side of the line, data is assumed to be trustworthy. The purpose of validation logic is to allow data to safely cross the trust boundary - to move from untrusted to trusted. A trust boundary violation occurs when a program blurs the line between what is trusted and what is untrusted. By combining trusted and untrusted data in the same data structure, it becomes easier for programmers to mistakenly trust unvalidated data."
+          },
+          "CWE-829": {
+            "name": "Inclusion of Functionality from Untrusted Control Sphere",
+            "description": "The product imports, requires, or includes executable functionality (such as a library) from a source that is outside of the intended control sphere.",
+            "extended_description": ""
+          },
+          "CWE-830": {
+            "name": "Inclusion of Web Functionality from an Untrusted Source",
+            "description": "The product includes web functionality (such as a web widget) from another domain, which causes it to operate within the domain of the product, potentially granting total access and control of the product to the untrusted source.",
+            "extended_description": "Including third party functionality in a web-based environment is risky, especially if the source of the functionality is untrusted. Even if the third party is a trusted source, the product may still be exposed to attacks and malicious behavior if that trusted source is compromised, or if the code is modified in transmission from the third party to the product. This weakness is common in \"mashup\" development on the web, which may include source functionality from other domains. For example, Javascript-based web widgets may be inserted by using '<SCRIPT SRC=\"http://other.domain.here\">' tags, which causes the code to run in the domain of the product, not the remote site from which the widget was loaded. As a result, the included code has access to the local DOM, including cookies and other data that the developer might not want the remote site to be able to access. Such dependencies may be desirable, or even required, but sometimes programmers are not aware that a dependency exists."
+          }
+        },
+        "vuln": [
+          {
+            "name": "flush_pending_delta_data",
+            "path": "backend/open_webui/utils/middleware.py",
+            "lines": [
+              "if \"event\" in data:",
+              "    await event_emitter(data.get(\"event\", {}))"
+            ],
+            "description": "Emits arbitrary events from external data without checking if the request originates from a direct connection, allowing malicious model servers to inject and execute arbitrary JavaScript via Server-Sent Event execute events."
+          }
+        ],
+        "safe": [
+          {
+            "name": "flush_pending_delta_data",
+            "path": "backend/open_webui/utils/middleware.py",
+            "lines": [
+              "if \"event\" in data and not getattr(",
+              "    request.state, \"direct\", False",
+              "):",
+              "    await event_emitter(data.get(\"event\", {}))"
+            ]
+          }
+        ],
+        "id": 3995,
+        "idx": 3994
+      }
+    }
+
+
+    ]}

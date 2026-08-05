@@ -26,7 +26,8 @@ docker info >/dev/null 2>&1 || { echo "Docker daemon is not running" >&2; exit 2
 mkdir -p "$CPG_REPO_DIR"
 
 echo "[1/3] Building Docker image: $DOCKER_IMAGE"
-docker build -t "$DOCKER_IMAGE" "$ROOT"
+docker build --load -t "$DOCKER_IMAGE" "$ROOT"
+docker image inspect "$DOCKER_IMAGE" >/dev/null || { echo "Docker image was not loaded correctly: $DOCKER_IMAGE" >&2; exit 1; }
 
 echo "[2/3] Cloning Fraunhofer CPG: $CPG_REF"
 docker run --rm \

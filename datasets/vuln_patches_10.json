@@ -1,0 +1,277 @@
+{
+  "records": [
+    {
+      "project": "invoke-ai/InvokeAI",
+      "source_line": 1,
+      "results": [
+        {
+          "project": "invoke-ai/InvokeAI",
+          "commit": "358dbdbf8491eec282019efa9abdec5c4cfa6f46",
+          "state": "vulnerable"
+        },
+        {
+          "project": "invoke-ai/InvokeAI",
+          "commit": "5440c037674882b2ab7acd59087e9bb04b49657a",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2024-11042"
+        ],
+        "cwe_ids": [
+          "CWE-73"
+        ]
+      }
+    },
+    {
+      "project": "langroid/langroid",
+      "source_line": 2,
+      "results": [
+        {
+          "project": "langroid/langroid",
+          "commit": "e63280330459e447f3a3e04f7229019b53a93d03",
+          "state": "vulnerable"
+        },
+        {
+          "project": "langroid/langroid",
+          "commit": "0d9e4a7bb3ae2eef8d38f2e970ff916599a2b2a6",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2025-46724",
+          "CVE-2025-46725"
+        ],
+        "cwe_ids": [
+          "CWE-94"
+        ]
+      }
+    },
+    {
+      "project": "openstack/nova",
+      "source_line": 3,
+      "results": [
+        {
+          "project": "openstack/nova",
+          "commit": "23995b4f9945aa242f6a9e7bd5bc700c27f31eb2",
+          "state": "vulnerable"
+        },
+        {
+          "project": "openstack/nova",
+          "commit": "26d4047e17eba9bc271f8868f1d0ffeec97b555e",
+          "state": "fixed"
+        },
+        {
+          "project": "openstack/nova",
+          "commit": "d8fbf04f325f593836f8d44b6bbf42b85bde94e3",
+          "state": "fixed"
+        },
+        {
+          "project": "openstack/nova",
+          "commit": "08f1f914cc219cf526adfb08c46b8f40b4e78232",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2015-9543"
+        ],
+        "cwe_ids": [
+          "CWE-200"
+        ]
+      }
+    },
+    {
+      "project": "psd-tools/psd-tools",
+      "source_line": 4,
+      "results": [
+        {
+          "project": "psd-tools/psd-tools",
+          "commit": "db86d353a8ee79beae4d743a9f9cc099e59ae578",
+          "state": "vulnerable"
+        },
+        {
+          "project": "psd-tools/psd-tools",
+          "commit": "fd51f8b4a52bc9c1c06d1035dfdf2cd920e87074",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2020-10571"
+        ],
+        "cwe_ids": [
+          "CWE-754"
+        ]
+      }
+    },
+    {
+      "project": "matrix-org/synapse",
+      "source_line": 5,
+      "results": [
+        {
+          "project": "matrix-org/synapse",
+          "commit": "21e6c0ed644a5306d945632af0afe005c90f4649",
+          "state": "vulnerable"
+        },
+        {
+          "project": "matrix-org/synapse",
+          "commit": "fa1308061802ac7b7d20e954ba7372c5ac292333",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2022-31052"
+        ],
+        "cwe_ids": [
+          "CWE-674"
+        ]
+      }
+    },
+    {
+      "project": "openstack/keystone",
+      "source_line": 6,
+      "results": [
+        {
+          "project": "openstack/keystone",
+          "commit": "86901664189c62fce6f8f81619da0896cce469a1",
+          "state": "vulnerable"
+        },
+        {
+          "project": "openstack/keystone",
+          "commit": "255b1d43500f5d98ec73a0056525b492b14fec05",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2013-1865"
+        ],
+        "cwe_ids": [
+          "CWE-287"
+        ]
+      }
+    },
+    {
+      "project": "paramiko/paramiko",
+      "source_line": 7,
+      "results": [
+        {
+          "project": "paramiko/paramiko",
+          "commit": "afd38eea1a1c76e05109d71cf79704133a4a8ff4",
+          "state": "vulnerable"
+        },
+        {
+          "project": "paramiko/paramiko",
+          "commit": "e9dfd854bdaf8af15d7834f7502a0451d217bb8c",
+          "state": "fixed"
+        },
+        {
+          "project": "paramiko/paramiko",
+          "commit": "fa29bd8446c8eab237f5187d28787727b4610516",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2018-7750"
+        ],
+        "cwe_ids": [
+          "CWE-287"
+        ]
+      }
+    },
+    {
+      "project": "osuosl/twisted_vncauthproxy",
+      "source_line": 8,
+      "results": [
+        {
+          "project": "osuosl/twisted_vncauthproxy",
+          "commit": "3dffdffa2753e09bea351ef6e0f22bd06e32affb",
+          "state": "vulnerable"
+        },
+        {
+          "project": "osuosl/twisted_vncauthproxy",
+          "commit": "edc149af29242178091b2d6fcd42c3ef0851644b",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2022-36436"
+        ],
+        "cwe_ids": [
+          "CWE-287"
+        ]
+      }
+    },
+    {
+      "project": "FOSSBots/sopel-channelmgnt",
+      "source_line": 9,
+      "results": [
+        {
+          "project": "FOSSBots/sopel-channelmgnt",
+          "commit": "cd25b767600d15d2a4bcbfb78529b5bb1b44af4a",
+          "state": "vulnerable"
+        },
+        {
+          "project": "FOSSBots/sopel-channelmgnt",
+          "commit": "643388365f28c5cc682254ab913c401f0e53260a",
+          "state": "fixed"
+        },
+        {
+          "project": "FOSSBots/sopel-channelmgnt",
+          "commit": "7c96d400358221e59135f0a0be0744f3fad73856",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2021-21431"
+        ],
+        "cwe_ids": [
+          "CWE-20",
+          "CWE-284"
+        ]
+      }
+    },
+    {
+      "project": "pretalx/pretalx",
+      "source_line": 10,
+      "results": [
+        {
+          "project": "pretalx/pretalx",
+          "commit": "4732e8f5592eeeb3c75233a783985158e3dd12bb",
+          "state": "vulnerable"
+        },
+        {
+          "project": "pretalx/pretalx",
+          "commit": "60722c43cf975f319e94102e6bff320723776890",
+          "state": "fixed"
+        }
+      ],
+      "dataset_record": {
+        "language": "python",
+        "cve_ids": [
+          "CVE-2023-28458",
+          "CVE-2023-28459"
+        ],
+        "cwe_ids": [
+          "CWE-22"
+        ]
+      }
+    }
+  ]
+}
