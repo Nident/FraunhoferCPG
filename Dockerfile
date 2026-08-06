@@ -11,6 +11,7 @@ RUN apt-get update \
         build-essential \
         ca-certificates \
         git \
+        openssh-client \
         python3 \
         python3-dev \
         python3-pip \

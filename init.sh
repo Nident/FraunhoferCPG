@@ -17,6 +17,11 @@ done
 command -v docker >/dev/null || { echo "Missing command: docker" >&2; exit 2; }
 docker info >/dev/null 2>&1 || { echo "Docker daemon is not running" >&2; exit 2; }
 
+SSH_MOUNT_ARGS=()
+if [[ -d "$HOME/.ssh" ]]; then
+  SSH_MOUNT_ARGS=(-v "$HOME/.ssh:/root/.ssh:ro")
+fi
+
 mkdir -p "$CPG_REPO_DIR"
 
 echo "[1/3] Building Docker image: $DOCKER_IMAGE"
@@ -26,6 +31,7 @@ docker image inspect "$DOCKER_IMAGE" >/dev/null || { echo "Docker image was not 
 echo "[2/3] Cloning Fraunhofer CPG: $CPG_REF"
 docker run --rm \
   -e CPG_GIT_URL -e CPG_REF \
+  "${SSH_MOUNT_ARGS[@]}" \
   -v "$CPG_REPO_DIR:/cpg" \
   "$DOCKER_IMAGE" bash -lc '
     set -euo pipefail
@@ -38,6 +44,9 @@ docker run --rm \
     git -C /cpg checkout --force "$CPG_REF"
     git -C /cpg clean -fdx
     [[ -f /cpg/gradle.properties ]] || cp /cpg/gradle.properties.example /cpg/gradle.properties
+    if [[ ! -d /cpg/cpg-vflow ]]; then
+      sed -i "/include(\":cpg-vflow\")/d" /cpg/settings.gradle.kts
+    fi
   '
 
 echo "[3/3] Building cpg-neo4j"
