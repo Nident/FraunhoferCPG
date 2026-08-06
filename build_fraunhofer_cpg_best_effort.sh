@@ -12,6 +12,7 @@ Usage:
 
 Environment:
   MAX_RETRIES       Maximum number of failed files to skip during combined CPG retries. Default: 5
+  CLONE_RETRIES     Maximum clone/fetch attempts for transient network failures. Default: 3
   PRECHECK_FILES    Run CPG once per file first and skip files that fail. Default: 0
   SOURCE_GLOB       find(1) path glob for source files. Default: ./*.java
   METRICS_CSV       Optional old-format commit metrics CSV
@@ -45,7 +46,9 @@ SOURCE_GLOB="${SOURCE_GLOB:-./*.java}"
 METRICS_CSV="${METRICS_CSV:-}"
 DOCKER_SAMPLES_CSV="${DOCKER_SAMPLES_CSV:-}"
 STATS_INTERVAL_SECONDS="${STATS_INTERVAL_SECONDS:-1}"
+CLONE_RETRIES="${CLONE_RETRIES:-3}"
 [[ "$MAX_RETRIES" =~ ^[0-9]+$ ]] || { echo "MAX_RETRIES must be a non-negative integer" >&2; exit 2; }
+[[ "$CLONE_RETRIES" =~ ^[1-9][0-9]*$ ]] || { echo "CLONE_RETRIES must be a positive integer" >&2; exit 2; }
 [[ "$PRECHECK_FILES" =~ ^(0|1)$ ]] || { echo "PRECHECK_FILES must be 0 or 1" >&2; exit 2; }
 [[ "$SOURCE_GLOB" != *$'\n'* ]] || { echo "SOURCE_GLOB must be one line" >&2; exit 2; }
 python3 - "$STATS_INTERVAL_SECONDS" <<'PY' || { echo "STATS_INTERVAL_SECONDS must be a positive number" >&2; exit 2; }
@@ -166,20 +169,37 @@ PY
 }
 
 echo "[1/3] Clone and checkout: https://github.com/$PROJECT.git@$COMMIT"
-docker run --rm \
-  -e PROJECT="$PROJECT" -e COMMIT="$COMMIT" \
-  -v "$repo_dir:/repo" \
-  "$DOCKER_IMAGE" bash -lc '
-    set -euo pipefail
-    git config --global --add safe.directory /repo
-    if ! git -C /repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      find /repo -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-      git clone "https://github.com/$PROJECT.git" /repo
-    fi
-    git -C /repo fetch --all --tags --prune
-    git -C /repo checkout --force "$COMMIT"
-    git -C /repo clean -fdx
-  '
+clone_exit=0
+for clone_attempt in $(seq 1 "$CLONE_RETRIES"); do
+  clone_exit=0
+  docker run --rm \
+    -e PROJECT="$PROJECT" -e COMMIT="$COMMIT" \
+    -v "$repo_dir:/repo" \
+    "$DOCKER_IMAGE" bash -lc '
+      set -euo pipefail
+      git config --global --add safe.directory /repo
+      if ! git -C /repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        find /repo -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+        git clone "https://github.com/$PROJECT.git" /repo
+      fi
+      git -C /repo fetch --all --tags --prune
+      git -C /repo checkout --force "$COMMIT"
+      git -C /repo clean -fdx
+    ' || clone_exit=$?
+  if [[ "$clone_exit" -eq 0 ]]; then
+    break
+  fi
+  if [[ "$clone_attempt" -lt "$CLONE_RETRIES" ]]; then
+    echo "Clone attempt $clone_attempt/$CLONE_RETRIES failed; retrying in 10s" >&2
+    sleep 10
+  fi
+done
+if [[ "$clone_exit" -ne 0 ]]; then
+  echo "Clone failed after $CLONE_RETRIES attempts" >&2
+  cloned="$(python3 -c 'import time; print(time.time())')"
+  record_metrics failed
+  exit "$clone_exit"
+fi
 cloned="$(python3 -c 'import time; print(time.time())')"
 
 echo "[2/3] Build source list: $SOURCE_GLOB"

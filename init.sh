@@ -40,6 +40,7 @@ docker run --rm \
       find /cpg -mindepth 1 -maxdepth 1 -exec rm -rf {} +
       git clone "$CPG_GIT_URL" /cpg
     fi
+    git -C /cpg remote set-url origin "$CPG_GIT_URL"
     git -C /cpg fetch --all --tags --prune
     git -C /cpg checkout --force "$CPG_REF"
     git -C /cpg clean -fdx
